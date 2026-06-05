@@ -1,0 +1,19 @@
+{
+  "_nota": "Copia este archivo a config.json y ajústalo. El intervalo de chequeo lo controla n8n o cron, no este archivo.",
+  "products": [
+    {
+      "name": "Teclado mecánico de ejemplo",
+      "url": "https://www.ejemplo-tienda.com/producto/teclado",
+      "css_selector": "[itemprop='price'], .product-price, span.price",
+      "currency": "EUR",
+      "target_price": 79.99
+    },
+    {
+      "name": "Monitor 27 pulgadas de ejemplo",
+      "url": "https://www.ejemplo-tienda.com/producto/monitor",
+      "css_selector": ".price__current",
+      "currency": "EUR",
+      "target_price": 150.0
+    }
+  ]
+}

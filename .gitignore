@@ -1,0 +1,20 @@
+# Secretos y configuración local
+.env
+config.json
+
+# Estado generado en ejecución
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Editores / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
