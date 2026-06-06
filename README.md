@@ -76,7 +76,22 @@ python src/main.py --demo
 }
 ```
 
-El `css_selector` apunta al elemento HTML que contiene el precio en esa tienda. Acepta varios selectores separados por coma (usa el primero que encuentre).
+El `css_selector` apunta al elemento HTML que contiene el precio en esa tienda. Acepta varios selectores separados por coma y prueba todas las coincidencias hasta dar con un precio válido (así ignora duplicados vacíos de las versiones escritorio/móvil).
+
+**Tiendas que cargan el precio con JavaScript:** algunas tiendas dejan el `<span>` del precio vacío y lo rellenan en el navegador, pero exponen el valor en un **atributo de datos**. En ese caso añade `price_attribute` y el scraper leerá de ahí (número ya limpio, sin formato):
+
+```json
+{
+  "name": "Memoria RAM (precio renderizado por JS)",
+  "url": "https://tienda.com/producto/ram",
+  "css_selector": "[data-analytics-product-price-value]",
+  "price_attribute": "data-analytics-product-price-value",
+  "currency": "CLP",
+  "target_price": 60000
+}
+```
+
+El parser entiende los formatos europeo (`1.234,56`), estadounidense (`79.99`) y el de miles sin decimales (`64.990` → `64990`, típico en CLP).
 
 ## Automatizar con n8n
 
@@ -101,7 +116,9 @@ Lógica (Python) separada de la orquestación (n8n/cron): el mismo código sirve
 - [x] Alertas por Telegram
 - [x] Modo `--json` para integración con n8n
 - [x] Modo `--demo` sin dependencias externas
-- [ ] Soporte para tiendas con precio cargado por JavaScript (Playwright)
+- [x] Tiendas con precio renderizado por JS que lo exponen en un atributo de datos (`price_attribute`)
+- [x] Parser de precios multi-formato (UE, US y miles sin decimales tipo CLP)
+- [ ] Soporte completo de render JS con navegador headless (Playwright)
 - [ ] Histórico de precios con gráfica de evolución
 - [ ] Panel web con los productos vigilados
 
