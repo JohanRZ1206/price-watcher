@@ -1,19 +1,25 @@
 {
-  "_nota": "Copia este archivo a config.json y ajústalo. El intervalo de chequeo lo controla n8n o cron, no este archivo.",
+  "_nota": "Copia este archivo a config.json y ajustalo. El intervalo de chequeo lo controla n8n o cron, no este archivo.",
+  "_campos": {
+    "css_selector": "Selector CSS del elemento que contiene el precio. Encuentralo con las DevTools del navegador (clic derecho sobre el precio > Inspeccionar).",
+    "price_attribute": "OPCIONAL. Si la tienda renderiza el precio con JavaScript pero lo deja en un atributo de datos (p.ej. data-price o data-analytics-product-price-value), pon aqui el nombre del atributo y el scraper leera de ahi en vez del texto visible.",
+    "target_price": "Precio al que quieres recibir la alerta (numero, sin simbolo de moneda)."
+  },
   "products": [
     {
-      "name": "Teclado mecánico de ejemplo",
+      "name": "Teclado mecanico de ejemplo (precio en el texto)",
       "url": "https://www.ejemplo-tienda.com/producto/teclado",
       "css_selector": "[itemprop='price'], .product-price, span.price",
       "currency": "EUR",
       "target_price": 79.99
     },
     {
-      "name": "Monitor 27 pulgadas de ejemplo",
-      "url": "https://www.ejemplo-tienda.com/producto/monitor",
-      "css_selector": ".price__current",
-      "currency": "EUR",
-      "target_price": 150.0
+      "name": "Producto de ejemplo con precio renderizado por JS (se lee de un atributo)",
+      "url": "https://www.ejemplo-tienda.com/producto/ram",
+      "css_selector": "[data-analytics-product-price-value]",
+      "price_attribute": "data-analytics-product-price-value",
+      "currency": "CLP",
+      "target_price": 60000
     }
   ]
 }

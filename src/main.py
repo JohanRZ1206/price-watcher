@@ -94,28 +94,50 @@ def save_state(state: dict) -> None:
 # --- Parseo y scraping ------------------------------------------------------
 def parse_price(text: str) -> float | None:
     """
-    Convierte un texto de precio ('1.234,56 €', '$79.99', '79,99') a float.
-    Detecta el separador decimal por la posición del último '.' o ','.
+    Convierte un texto de precio a float detectando el formato regional:
+      '1.234,56 €' -> 1234.56   (UE: '.' miles, ',' decimal)
+      '$79.99'     -> 79.99     (US: '.' decimal)
+      '79,99'      -> 79.99     (',' decimal)
+      '$ 64.990'   -> 64990.0   (CLP: '.' separador de miles, sin decimales)
+
+    Regla cuando solo hay un tipo de separador: si aparece varias veces o el
+    último grupo tiene 3 dígitos, es separador de MILES (se quita); en otro
+    caso es decimal (se normaliza a '.').
     """
     cleaned = re.sub(r"[^\d.,]", "", text)
     if not cleaned:
         return None
     if "," in cleaned and "." in cleaned:
-        # El separador más a la derecha es el decimal.
+        # Ambos presentes: el separador más a la derecha es el decimal.
         if cleaned.rfind(",") > cleaned.rfind("."):
             cleaned = cleaned.replace(".", "").replace(",", ".")
         else:
             cleaned = cleaned.replace(",", "")
-    elif "," in cleaned:
-        cleaned = cleaned.replace(",", ".")
+    elif "," in cleaned or "." in cleaned:
+        sep = "," if "," in cleaned else "."
+        ultimo_grupo = cleaned.rsplit(sep, 1)[1]
+        if cleaned.count(sep) > 1 or len(ultimo_grupo) == 3:
+            cleaned = cleaned.replace(sep, "")   # separador de miles -> se elimina
+        else:
+            cleaned = cleaned.replace(sep, ".")  # separador decimal -> se normaliza
     try:
         return round(float(cleaned), 2)
     except ValueError:
         return None
 
 
-def fetch_price(url: str, css_selector: str) -> float | None:
-    """Descarga la página y extrae el precio con el selector CSS dado."""
+def fetch_price(url: str, css_selector: str, attribute: str | None = None) -> float | None:
+    """
+    Descarga la página y extrae el precio con el selector CSS dado.
+
+    - Por defecto lee el TEXTO del elemento.
+    - Si se indica 'attribute', lee ese atributo (útil cuando la tienda
+      renderiza el precio con JavaScript pero lo deja en un data-attribute,
+      p.ej. data-analytics-product-price-value="64990").
+    - Prueba TODAS las coincidencias del selector y se queda con el primer
+      precio válido: así los selectores duplicados (versión escritorio/móvil)
+      con copias vacías no rompen la lectura.
+    """
     try:
         resp = requests.get(url, headers=REQUEST_HEADERS, timeout=15)
         resp.raise_for_status()
@@ -124,11 +146,19 @@ def fetch_price(url: str, css_selector: str) -> float | None:
         return None
 
     soup = BeautifulSoup(resp.text, "html.parser")
-    node = soup.select_one(css_selector)
-    if node is None:
+    nodes = soup.select(css_selector)
+    if not nodes:
         print(f"  ! Selector '{css_selector}' no encontró nada en {url}", file=sys.stderr)
         return None
-    return parse_price(node.get_text(strip=True))
+
+    for node in nodes:
+        raw = node.get(attribute) if attribute else node.get_text(strip=True)
+        price = parse_price(raw) if raw else None
+        if price is not None:
+            return price
+
+    print(f"  ! Selector '{css_selector}' encontrado pero sin precio legible en {url}", file=sys.stderr)
+    return None
 
 
 # --- Lógica principal -------------------------------------------------------
@@ -142,7 +172,7 @@ def check_products(config: dict, state: dict) -> list[dict]:
         currency = product.get("currency", "EUR")
 
         print(f"→ {name}")
-        current = fetch_price(url, product["css_selector"])
+        current = fetch_price(url, product["css_selector"], product.get("price_attribute"))
         previous = state.get(url, {}).get("last_price")
 
         result = {
